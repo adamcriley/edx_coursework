@@ -24,7 +24,7 @@ The R Markdown code used to generate this pdf document and associated files can 
 
 Artificial Intelligence is booming in the legal field as firms scramble to research more quickly and leverage technology to provide their clients with a more complete experience. Any edge that a firm can bring to the litigation landscape become a crucial factor in determining how they negotiate, allocate resources, and communicate with their clients.\
 \
-This project will focus on assisting legal practitioners to predict the outcome of cases with social impact components. This litigation is often costly and can take years to complete. With this information, applied to the facts of their particular issue, they can either temper the expectations of a plaintiff with a case that will not likely be ruled in their favor or to be more aggressive with a defendant that is facing a potential loss and is looking for a way to mitigate the impact of the loss.\
+This project will focus on assisting legal practitioners to predict the outcome of cases with social impact components. This litigation is often costly and can take years to complete. With predictive information, applied to the facts of their particular issue, they can either temper the expectations of a plaintiff with a case that will not likely be ruled in their favor or to be more aggressive with a defendant that is facing a potential loss and is looking for a way to mitigate the impact of the associated monetary award.\
 \
 We are not aiming to create a model that can replace legal judgment, but will focus on a tool that can be utilized alongside traditional legal research to provide additional insights.\
 
@@ -32,19 +32,19 @@ We are not aiming to create a model that can replace legal judgment, but will fo
 
 Robert A. Carp (Professor of Political Science at the University of Houston) and Kenneth L. Manning (Professor of Political Science at the University of Massachusetts-Dartmouth) examined and collected a subset of the judicial opinions published in the *Federal Supplement* that contained a question of law with a traditional liberal-conservative dimension. The database contains more than 110,000 entries decided between 1927 and 2012. It is estimated that (as of 2016) approximately half of the decisions published in the *Federal Supplement* have been included in the collection.\
 \
-The authors would read each decision and, if appropriate, code various demographic information and cataloged the decision as either liberal or conservative using criteria that can be found in the database's [companion codebook](https://www.umassd.edu/media/umassdartmouth/political-science/facultydocs/codebook-5-24-2016.pdf). If a case could not clearly be classified as either liberal or conservative of if there were multiple issues or multiple parties that made the determination uncertain, the case was not included in the database.\
+The authors would read each decision and, if appropriate, coded various demographic information and cataloged the decision as either liberal or conservative using criteria that can be found in the database's [companion codebook](https://www.umassd.edu/media/umassdartmouth/political-science/facultydocs/codebook-5-24-2016.pdf). If a case could not clearly be classified as either liberal or conservative of if there were multiple issues or multiple parties that made the determination uncertain, the case was not included in the database.\
 
 ### Dependent Variable  
 
-The dependent variable in the data is the ordinal-level liberal-conservative classification, "libcon." The variable has a value of either 0 (Conservative) or 1 (Liberal).\
+The dependent variable in the data is the ordinal-level liberal-conservative classification, "libcon." The variable has a value of either 0 (Conservative) or 1 (Liberal) and takes the form of a Bernoulli distribution.\
 
 ### Independent Variables  
 
-Independent variables include details about the judge writing the opinion, information about the court, topical classifications about the subject matter of the case, and the date of ruling. Each of the independent variables has been encoded but can be decoded using the above referenced companion codebook. We will look further into each of the independent variables as we inspect and process the data below.\
+Independent variables include details about the judge authoring the opinion, information about the court, topical classifications about the subject matter of the case, and the date of ruling. Each of the independent variables has been encoded but can be decoded using the above referenced companion codebook. We will look further into each of the independent variables as we inspect and process the data below.\
 
 ## Process  
 
-I will follow the following steps to create the model for this project:\
+I will follow the following steps to create the model for this project:
 
 1. Data Analysis
     1. Data Import & Cleaning
@@ -60,7 +60,7 @@ I will follow the following steps to create the model for this project:\
 
 ## Goal  
 
-This goal of this Capstone Project will be to use supervised learning to create a classifier based on data contained in the Carp Manning U.S. District Court Database that predicts the outcome of a certain United States Federal District Court cases.\
+This Capstone Project will use supervised machine learning to create a classifier based on data contained in the Carp Manning U.S. District Court Database that predicts the outcome of a certain United States Federal District Court cases as either liberal or conservative.\
 
 # Data Analysis  
 
@@ -77,7 +77,7 @@ if(!require(pdftools)) install.packages("pdftools", repos = "http://cran.us.r-pr
 if(!require(usmap)) install.packages("usmap", repos = "http://cran.us.r-project.org")
 if(!require(treemapify)) install.packages("treemapify", repos = "http://cran.us.r-project.org")
 ```
-The Carp-Manning data is split between two different documents, so we need to import them both and combine them to be able to effectively explore the data in a meaningful way. The first document is the coded data set (we will target the excel version) and the second is the PDF companion codebook which we will use to decode and map the data.\
+The Carp-Manning data is split between two different documents, so we need to import them both and combine them to be able to effectively explore the data in a meaningful way. The first document is the coded data set (we will utilize the excel version, although the data is available in several formats) and the second is the PDF companion codebook which we will use to decode and map the data to make it readable.\
 ```{r include=FALSE}
 ##############
 # Import Data
@@ -108,9 +108,9 @@ if (file.exists(pdf_path) && !inherits(PDFget, "try-error")) {
     CM_text <- pdf_text(pdf_url)
 }
 ```
-We will do a quick check of our files to see if there are locally available copies of these files and if there are not, we will automatically download them from the the [University of Massachusetts-Dartmouth project site](https://www.umassd.edu/cas/polisci/resources/us-district-court-database/).  The excel file was imported directly as a tribble and the PDF document was converted into a character vector.\
+We will do a quick check of our files to see if there are locally available copies of these files and if there are not, we will automatically download them from the the [University of Massachusetts-Dartmouth project site](https://www.umassd.edu/cas/polisci/resources/us-district-court-database/).  The excel file can be imported directly as a tribble and the PDF document is initially converted into a character vector.\
 \
-Now that we have both documents, we need to process the codebook and scrape the the tables within to be able to manipulate them. The first step is to inspect the codebook visually and identify the tables we want to target and note what pages they are on. I also noticed that each row of each table is on its own line and each entry appears to be in similar format: a numerical identifier, then a dash, then decoded information.  After cross referencing to check that the values within the codebook match exactly to the raw excel data and verifying the format, everything looks promising. We should we make a notes based on our visual inspect and can then create a function that will scan the pages we identified and collect the table information from them.\
+Now that we have both documents, we need to process the codebook and scrape the the tables within to be able to manipulate them. The first step is to inspect the codebook and identify the tables we want to target and note what pages they appear on. While doing that, I noticed that each row of each table is on its own line and each entry appears to be in similar format: a numerical identifier, then a dash, then decoded information.  After cross referencing to check that the values within the codebook match exactly to the raw excel data and verifying the formats, everything looks promising. We can make a notes based on our visual inspect and can then create a function that will scan the pages we identified and collect the table information from them.\
 
 ### Tables found in the codebook:  
 
@@ -167,17 +167,17 @@ CATEGORY_regex <- "^\\d"
 APPRES_regex <- "^\\d\\d"
 DEMOGRAPHIC_regex <- "^\\d"
 ```
-We are really lucky that there is minimal cross over between the pages. I noted above about page 44, but there are no other instances that will require further processing because where there are two tables on one page, the formats are different and can be parsed automatically.\
+We are really lucky that there is minimal cross over between the pages. I noted above in the demographics block about page 44, but there are no other instances that will require further processing because where there are two tables on one page, the formats are different and can be parsed automatically.\
 \
 I initially envisioned this as a three stage process:\
 \
-Stage one: Split the character text by line to create the rows of the table\
-Stage two: split the rows by the dash to create the columns\
+Stage one: Split the character vector text by line to create the rows of the table\
+Stage two: split the rows using the dash to create the columns\
 Stage three: verify the data and return it\
 \
-After some trial and error, I realized that the 'dash' character was not being scanned in a uniform way and needed to be cleaned so that the horizontal line between the number and the definition would be converted to a 'dash' and stage two would work as intended. I also needed to strip white space from the beginning and end of the strings to make sure the verification at stage three matched as I expected. Finally, I also removed any rows with empty values.\
+After some trial and error, I realized that the 'dash' character was not being scanned in a uniform way and needed to be cleaned so that any horizontal line between the formatted number and the definition would be converted to a 'dash' and stage two would work as intended. I also needed to strip white space from the beginning and end of the strings to make sure the verification at stage three matched as I expected. Finally, I also removed any rows with empty values.\
 \
-We will call our function 'get_CM_tables':\
+We will name our function 'get_CM_tables':\
 ```{r}
 get_CM_tables <- function(CM_page, CM_format) {
     stage0 <- gsub("\\s[[:punct:]]+\\s)", " - ", CM_text[[CM_page]])
@@ -245,7 +245,7 @@ These tables can be joined to the raw excel data to create a master data set wit
 
 I added two additional variables to the table during processing. The first was a calculation of the difference between the year the judge was appointed and the the year the case opinion was written. My gut is tells me that the length of time a jurist has served on the bench may change how they rule either from the impact of age or additional experience. Second, I looked up and added the political party of the president that appointed the judge. This was done completely out of curiosity.\
 \
-There are a lot of other additional classifiers that could be added to this data to improve the fit and accuracy of the model. States could be assigned different regions (which may could bet distinct from circuits), case types could be further sub-divided based on topic or assigned into sub-categories, more demographic information could be added about the judges. These steps could add value, especially subdividing the topics, and should be explored if the model would have a commercial application which would require a very high degree of accuracy based on the business case (as described above).\
+There are a lot of other additional classifiers that could be added to this data to improve the fit and accuracy of the model. States could be assigned different regions (which could be distinct from circuits), case types could be further sub-divided based on topic or assigned into sub-categories, or more demographic information could be added about the judges. These steps could add value, especially subdividing the topics, and should be explored if the model would have a commercial application which would require a very high degree of accuracy based on the business case (as described above).\
 ```{r include=FALSE}
 # Set up table for matching from reference material
 CM <- CM %>% mutate(
@@ -283,7 +283,7 @@ CM_master <- CM %>%
 CM_master$presparty <- ifelse(CM$appres %in% c(25, 26, 27, 29, 30, 31, 34, 37, 38, 40, 41, 43), 0, 1)
 
 ```
-We have the all the data in a single table, now we need to partition the data to hold out a small portion for unbiased final testing so we can determine how accurate our predictions are against data that was never involved in the training or exploration will remain unknown to both myself and the algorithm. Although there is no hard rule about the amount of data that should be selected for a testing hold out, typical values are between 10-20%. I will select 15% of the data and set it aside because while the data set isn't large, there are several parameters that will need to be tuned. We will train the models on the remaining 85%.\
+We have the all the data compiled in a single table, now we need to partition the data to hold out a small portion for unbiased final testing to allow us to determine how accurate our predictions are against data that was never involved in the training or exploration and will remain unknown to both myself and the algorithm. Although there is no hard rule about the amount of data that should be selected for a testing hold out, typical values are between 10-20%. I will select 15% of the data and set it aside because while the data set isn't large, there are several parameters that will need to be tuned. We will train the models on the remaining 85%.\
 ```{r include=FALSE}
 ###################################
 # Determine Test and Training Sets
@@ -314,7 +314,7 @@ We should begin our exploration by taking a look at how our independent variable
 ```{r}
 glimpse(CMtraining)
 ```
-The training set consists of 94,340 entries of 30 columns (11 of which are duplicate and decoded). The average case is outcome is a conservative one (~58% of the time). With 19 independent variables to consider, we need to visually inspect how our outcome is being influenced. Many of our independent variables are related, so we will briefly look at each group.\
+The training set consists of 94,340 entries of 30 columns (11 of which are duplicate and a result of the decoding process). The average case is outcome is a conservative one (~58% of the time). With 19 independent variables to consider, we need to visually inspect how our outcome is being influenced. Many of our independent variables might be related, so we will briefly look at each group.\
 
 ### Jurisdiction  
 
@@ -324,7 +324,7 @@ tend_state <- CMtraining %>% group_by(statename) %>% summarise(avgyear = (mean(l
 colnames(tend_state) <- c("state", "libcon")
 plot_usmap(data = tend_state, values = "libcon", color="white") +  scale_fill_continuous(name= "", low = "lightpink2", high = "dodgerblue", label=c("v.cons", "cons", "m.con", "m.lib", "lib", "v.lib")) + theme(legend.position = "right")
 ```
-The are a lot of different shades of color in that representation, but there are a couple of states that stand out. Additionally, as we look into the data more closely, we can notice that there are several territories that were not represented on the original map. We should take a different look and switch to a view that will allow us see a more direct comparison between all jurisdictions.\
+The are a lot of different shades of color in that representation, but there are a couple of states that stand out. Additionally, as we look into the data more closely, we can notice that there are several US territories that were not represented on the original map. We should take a different look and switch to a view that will allow us see a more direct comparison between all jurisdictions.\
 ```{r echo=FALSE}
 tend_state$tend <- ifelse(tend_state$libcon > 0, "liberal", "conservative")
 tend_state <- tend_state[order(tend_state$libcon), ]
@@ -337,7 +337,7 @@ As expected, jurisdiction seems to be an important independent variable, which m
 
 ### Judge Demographics  
 
-Another obvious set of variables that could influence on the outcome of a given case are the demographic specifics of the judge presiding over the matter. This group of visualizations will be summarized so that the average for each characteristic will be shown for a given year and the characteristics will be plotted over time. This significantly simplifies what is shown.\
+Another obvious set of variables that could influence the outcome of a given case are the demographic specifics of the judge presiding over the matter. This group of visualizations will be summarized so that the average for each characteristic will be shown for a given year and each characteristics will be plotted over time. This significantly simplifies what is shown.\
 \
 The first demographic we will examine is race:\
 ```{r echo=FALSE}
@@ -349,18 +349,19 @@ ggplot(data= tend_race, aes(year, avgyear, color=judgerace)) + geom_point() + ge
 rm(tend_race)
 ```
 There are five possible values for race, which I abbreviated in the above figure: "African-American/black" ("Af.Amer"), "white/Caucasian" ("C.Amer"), "Latino/Hispanic" ("L.Amer"), "Native American" ("N.Amer"), and "Asian American" ("As.Amer"). While I had planned to add smoothed trend lines to all the graphs, some of the race data was too skewed for smoothing and linear approximations were required. There are clear trends contained in the racial breakdown so it is a trait that will likely add value to our model.\
-\
-Next, we'll examine gender:\
+\newpage
+Next, we will examine gender:\
 ```{r echo=FALSE}
 # gender
 tend_gender <- CMtraining %>% group_by(judgegender, year) %>% summarise(avgyear = (mean(libcon)-.5))
 ggplot(data= tend_gender, aes(year, avgyear, color=judgegender)) + geom_point() + geom_smooth(method="loess", se=FALSE) + labs(x="Year", y="") + scale_y_continuous(labels=c("cons", "m.cons", "ind", "m.lib", "lib")) + scale_colour_manual(name="", values = c("female"="dodgerblue", "male"="lightpink2")) + theme_classic()
 ```
-The Carp-Manning authors have used the binary "male" and "female" designations for this study. Again, there is strong trend visible with this data, even though the data has some variability in the first half of the 20th century. Actually if we look at the graph with confidence intervals displayed, we can see that while the data for the male judges seems pretty steady, data for the female judges has a lot more uncertainly. This is probably due in large part to the smaller number of female judges, but I think the trend is worth adding to the model regardless.\
+The Carp-Manning authors have used the binary "male" and "female" designations for this study. Again, there is a strong trend visible with this data, even though the data has some variability in the first half of the 20th century. Actually if we look at the graph with confidence intervals displayed (next page), we can see that while the data for the male judges seems pretty steady, data for the female judges has a lot more uncertainly. This is probably due in large part to the smaller number of female judges, but I think the trend is worth adding to the model regardless.\
 ```{r echo=FALSE}
 ggplot(data= tend_gender, aes(year, avgyear, color=judgegender)) + geom_point() + geom_smooth(method="loess", se=TRUE, aes(fill=judgegender)) + labs(x="Year", y="") + scale_y_continuous(labels=c("vcons","cons", "m.cons", "ind", "m.lib", "lib")) + scale_colour_manual(name="", values = c("female"="dodgerblue", "male"="lightpink2")) + scale_fill_manual(name="", values = c("female"="dodgerblue", "male"="lightpink2")) + theme_classic()
 rm(tend_gender)
 ```
+\newpage
 The final piece of judge demographic information we should explore is the correlation of the ruling tendency and the judge's political party:\
 ```{r echo=FALSE}
 # party affiliation
@@ -370,9 +371,9 @@ tend_party$judgeparty <- ifelse(tend_party$judgeparty=="Independent/Other/Unknow
 ggplot(data= tend_party, aes(year, avgyear, color=judgeparty)) + geom_point() + geom_smooth(method="loess", se=FALSE) + labs(x="Year", y="") + scale_y_continuous(labels=c("cons", "m.cons", "ind", "m.lib", "lib")) + scale_colour_manual(name="", values = c("Dem"="dodgerblue", "Rep"="lightpink2", "Ind"="palegreen3")) + theme_classic()
 rm(tend_party)
 ```
-There were 4 designations provided by the authors for this characteristic: "Democrat" ("Dem"), "Republican" ("Rep"), "Independent/Other/Unknown" ("Ind"), and "99". I am not sure, nor do the authors indicate what the the "99" designation is associated with, but I removed the factor from the chart.\
+There were 4 designations provided by the authors for this characteristic: "Democrat" ("Dem"), "Republican" ("Rep"), "Independent/Other/Unknown" ("Ind"), and "99". I am not sure, nor do the authors indicate what the the "99" designation is associated with, so I removed that factor from the chart.\
 \
-This display matches with expectations almost perfectly with Democrats being traditionally being perceived as more liberal and Republican as being more conservative over this time frame. Additionally, Independents seem not to follow a specific trend which is also an expected pattern. These trends make common sense as political party is a feature chosen by the judge and it logically follows that the expression of the political party would also provide good information about the ruling tendencies of each judge.\
+This display matches with expectations almost perfectly, with Democrats being traditionally being perceived as more liberal and Republican as being more conservative over this time frame. Additionally, Independents seem not to follow a specific trend which is also an expected pattern. These trends make common sense as political party is a feature personally chosen by the judge and it logically follows that the expression of the political party would also provide good information about the ruling tendencies of each judge.\
 \newpage
 
 ### Appointment Demographics  
@@ -381,17 +382,17 @@ Federal judges of all levels in the United States are nominated by the President
 ```{r echo=FALSE}
 # pres by name
 tend_pres <- CMtraining %>% group_by(presname, year, judge) %>% summarise(avgyear = (mean(libcon)-.5), count=n())
-ggplot(tend_pres, aes(x=year, y=avgyear, color=presname)) + geom_point() + labs(x="Year", y="") + scale_y_continuous(labels=c("cons", "m.cons", "ind", "m.lib", "lib")) + theme_classic()
+ggplot(tend_pres, aes(x=year, y=avgyear, color=presname)) + geom_point() + labs(x="Year", y="") + scale_y_continuous(name="", labels=c("cons", "m.cons", "ind", "m.lib", "lib")) + theme_classic()
 rm(tend_pres)
 ```
-This visualization is too crowded to be able to make sense of and no trends are apparent from the quick examination. The are so many presidents listed that adding trend lines makes the graph more confusing and even removing the data points all together and just leaving the lines was still too much. We should peel the information back a layer and group the presidents by their political party and see if a trend emerges. It feels like there should be some sort of correlation, as presidents would be more likely to appoint judges that have views similar to their own:\
+This visualization is too crowded to be able to make sense of and no trends are apparent from a quick examination of the graph. The are so many presidents listed that adding trend lines makes the graph more confusing and even removing the data points all together so as to just leave the trend lines was still too much. We should peel the information back a layer and group the presidents by their political party and see if a trend emerges. I feel like there should be some sort of correlation, as presidents would be more likely to appoint judges that have views similar to their own:\
 ```{r echo=FALSE}
 # pres by party
 tend_pres <- CMtraining %>% group_by(prespartyname, year) %>% summarise(avgyear = (mean(libcon)-.5), count=n())
-ggplot(tend_pres, aes(x=year, y=avgyear, color=prespartyname)) + geom_point() + labs(x="Year", y="") + geom_smooth(method="loess", se=FALSE) + scale_y_continuous(labels=c("cons", "m.cons", "ind", "m.lib", "lib")) + scale_colour_manual(name="", values = c("Democrat"="dodgerblue", "Republican"="lightpink2")) + theme_classic()
+ggplot(tend_pres, aes(x=year, y=avgyear, color=prespartyname)) + geom_point() + labs(x="Year", y="") + geom_smooth(method="loess", se=FALSE) + scale_y_continuous(labels=c("cons", "m.cons", "ind", "m.lib", "lib")) + scale_colour_manual(values = c("Democrat"="dodgerblue", "Republican"="lightpink2")) + scale_color_discrete(name = "") + theme_classic()
 rm(tend_pres)
 ```
-We can now see a clear trend in the data and the shape of our trend lines mirrors the trend lines of the judge's political party. This also makes common sense and tells us that the appointing president designation might be conflated. We need to be caution of that when examining our model later.\
+We can now see a clear trend in the data and the shape of our trend lines mirrors the trend lines of the judge's political party. This also makes common sense and tells us that the appointing president designation might be conflated because presidents are likely to pick judges with political parties matching their own. We need to be caution of that when selecting variables for our model.\
 \newpage
 
 ### Tenure  
@@ -406,12 +407,12 @@ tend_duration$count <- tend_duration$count*tend_duration$sign
 ggplot(tend_duration, aes(x=tenure, y=avgyear)) + geom_point(aes(color= avgyear, size=abs(count))) + scale_color_gradient(low="lightpink2", high="dodgerblue") + scale_y_continuous(labels=c("cons", "m.cons", "ind", "m.lib", "lib")) + geom_smooth(method="loess", color="purple", fill="plum1") + labs(x="Years in Office", y="") + theme_classic() + theme(legend.position="none") 
 rm(tend_duration)
 ```
-On this chart, each dot represents a group of judges at that particular ideological lean. The size of the dot represents the number of opinions written by the group. We do see a slight conservative shift after about 15 years on the bench, but before that we see a slight upward trend, which I did not expect. This measure does look impactful.\
+On this chart, each dot represents a group of judges at that particular ideological lean for that number of years in office. The size of the dot represents the number of opinions written by the group. We do see a slight conservative shift after about 15 years on the bench, but before that we see a slight upward trend, which I did not expect. This measure does look impactful.\
 \newpage
 
 ### Subject Matter  
 
-The final independent variables we need to take a look at involve the subject matter of the law suit:\
+The final independent variables we want to take a look at involves the subject matter of the law suit:\
 ```{r echo=FALSE}
 # case type distribution
 treeMap <- CMtraining %>% group_by(generaltypeofcase, typeofcase) %>% summarise(avgtype = (mean(libcon)-.5), count=n())
@@ -420,7 +421,7 @@ treeMap$generaltypeofcase <- str_replace(treeMap$generaltypeofcase, " case", "")
 ggplot(data=treeMap, aes(area = count, fill=avgtype, label=typeofcase, subgroup=generaltypeofcase)) + geom_treemap() + geom_treemap_subgroup_border(color="black") + geom_treemap_subgroup_text(color="black") + geom_treemap_text(fontface = "italic", color = "white", place = "topleft", reflow = TRUE) + scale_fill_continuous(low = "lightpink2", high = "dodgerblue", name = "", label=c("cons", "m.cons", "ind", "m.lib", "lib")) + theme_classic()
 rm(treeMap)
 ```
-The tree diagram is useful here because it allows us to take a look at the variance from each of the 31 case type designations while keeping them grouped within the 3 case type categories. There are noticeable trend here, which is expected, and if we view the categories as a whole over time, we can see that they seem to have a stronger effect:\
+The tree diagram is useful here because it allows us to take a look at the variance from each of the 31 case type designations while keeping them grouped within the 3 case type categories. There are noticeable trends here, which is expected because of the style of visualization, but if we view the overall categories as a whole over time, we can see that they seem to have a stronger effect:\
 ```{r echo=FALSE}
 # category
 trend_cat <- CMtraining %>% group_by(generaltypeofcase, year) %>% summarise(avgtype = (mean(libcon)-.5), count=n())
@@ -428,21 +429,21 @@ trend_cat$generaltypeofcase <- str_replace(trend_cat$generaltypeofcase, " case",
 ggplot(trend_cat, aes(x=year, y=avgtype, color=generaltypeofcase)) + geom_point() + geom_smooth(method="loess", se=FALSE) + labs(x="Year", y="") + scale_y_continuous(labels=c("conservative", "m. conservative", "neutral", "m. liberal", "liberal")) + scale_colour_manual(name="", values = c("Economic Regulation and/or Labor"="dodgerblue", "Criminal Justice"="lightpink2", "Civil Liberties/Rights"="palegreen3")) + theme_classic()
 rm(trend_cat)
 ```
-The case type categories almost form bands, which meets our anecdotal expectations, with judges treated economic and labor matters much more liberally than criminal justice issues.\
+The case type categories almost form bands, which meets our anecdotal expectations, with judges treating economic and labor matters much more liberally than criminal justice issues.\
 
 ### Limitations  
 
-One final point before we move on. Legal cases involve one or more plaintiffs against one or more defendants contesting a specific factual pattern. While there are obviously trends in the data based on factors outside of the case itself, at the end of the day we will not be able to always determine the outcome of a case. This unknown variability needs to be taken into account when fitting our model.\
+One final point before we move on. Legal cases involve one or more plaintiffs against one or more defendants contesting a specific factual pattern. While there are obviously trends in the data based on factors outside of the case itself, at the end of the day we will not be able to always determine the outcome of a case without knowing the specific facts. This unknown variability needs to be taken into account when fitting our model.\
 \
-We also mentioned confounding earlier, but many of the independent variables may be related or may seem to be associated when underlying factors may be the cause of both the presentation in the dependent and independent variables. We need to cautious when examining our model and using it because of this.\
+We also mentioned confounding earlier when looking at political parties, but in fact many of the independent variables may be related or may seem to be associated because underlying factors may be the real cause of both the presentation in the dependent and independent variables.\
 \
-While I initially intended to use Linear discriminant analysis (LDA) as one of the models for this project, the data does not fit several of the assumptions required, which is worth mentioning here. Firstly, the data independent variables do not seem to be normally distributed, with much of the data skewed towards one of the classifiers. Additionally, some of the data sets that contain specific classifiers are too small for the model to function, because there are less data points than degrees of freedom in the model.\
+While I intended to use Linear discriminant analysis (LDA) as one of the models for this project, the data does not fit several of the assumptions required, which is worth mentioning here. Firstly, the data's independent variables do not seem to be normally distributed, with much of the data skewed towards one of the classifiers. Additionally, some of the data sets that contain specific classifiers are too small for the model to function, because there are less data points than degrees of freedom in the model.\
 \
-I had also originally also wanted to use a k-nearest neighbor approach, but the categorical nature of the data and small number of selected factors compared to the amount of data meant that the distance function I was using to calculate the neighborhood was too saturated and would fail, even with a neighborhood at $k=1$.\ 
+I had also originally also wanted to use a k-nearest neighbor approach, but the categorical nature of the data and small number of selected factors compared to the amount of data meant that the distance function used to calculate the neighborhood was too saturated and was causing model failures, even with a neighborhood at $k=1$.\ 
 
 ## Data Analysis Conslusions
 
-All of the features we examined look promising as predictor so we will select them all except the judge's political party, which we discussed may be too correlated with other predictors. We will use 8 predictors:\
+All of the features we examined look promising as predictors so we will select them all except the judge's political party, which we discussed may be too confounded with other predictors. We will use 8 predictors:\
 
 * Appointing President - appres
 * President's Political Party - presparty
@@ -469,7 +470,7 @@ We will build several machine learning algorithms and additionally ensemble them
 
 ### Cross Validation of Training Data
 
-Using the same ideas we discussed when we set aside a portion of our data to do unbiased testing, we can use a similar approach to when working to tune our model parameters. We can examine the training data and randomly use 85% of the remaining data, model it and test it against the 15% of data that was left over. When the first pass is completed, we can replace the sample we used and sample again. This will allow us to find parameters that are more stable and robust than just modeling against the entire training set at once. We will use random selection for the sample each time, using a method called "bootstrapping." For these models we will randomly sample with replacement 10 times. This control method is defined and used for tuning in all of our models for consistency.\
+Using the same ideas we discussed when we set aside a portion of our data to do unbiased testing, we can use a similar approach when working to tune our model parameters. We can randomly select a portion of our training data to train from, say 85%, model it, and then test it against the 15% of data that was left over. We can do this multiple time to build confidence in our parameters, When the first pass is completed, we replace the sample we used and sample again from the entire training set. This will allow us to find parameters that are more stable and robust than just modeling against the entire training set at once. Randomly selecting the sample from the whole population is a method called "bootstrapping." For these models we will bootstrap the samples with replacement 10 times. This control method is defined and then we can use it for tuning in all of our models.\
 ```{r}
 control <- trainControl(method = "boot", number = 10, p = .85)
 ```
@@ -500,7 +501,7 @@ where $\hat \beta_{n}$ is the prediction for the second factor, $N$ is the numbe
 \
 One thing to note here, while we can continue to increase our accuracy for the whole set, at some point the features we select will have such small groups that they might contain only 1 member. This could lead to a model that is so precise it will not be able to account for new variations. This is called 'over-fitting.'\
 \
-Because we have a Bernoulli distribution, we can use a special case of the linear model called logistical Regression. Logistical regression is another popular variation of the general linear model specifically used to classify binary events, like the outcome of a case being liberal or conservative. as we have here.\
+Because we have a Bernoulli distribution, we can use a special case of the linear model called logistical Regression. Logistical regression is a variation of the general linear model specifically used to classify binary events, like the outcome of a case being liberal or conservative. as we have here.\
 \
 The logistical regression model is defined as follows:
 
@@ -513,7 +514,7 @@ Where $p\left(x_{n} \right)$ is the probability that the output is 1 given our s
 
 ### Naive Bayes  
 
-The Naive Bayes is a simple probabilistic classifier and is a popular baseline model for classification. Its most important assumption is that all of the features are *equally important* and *independent.* While this rarely happens in real world data, we will use it here because the assumptions seem to hold based on our visual inspection.\
+The Naive Bayes is a simple probabilistic classifier and is a popular baseline model for classification. Its most important assumption is that all of the features are *equally important* and *independent.* While this rarely happens in real world data, we will use it here because the assumptions seem to hold somewhat based on our visual inspection.\
 \
 Given a vector of predictor variable values $x_{}$, the algorithm assigns conditional probabilities for each of the response variable's $Y_{i}$ classes:\
 
@@ -544,17 +545,17 @@ We will use this as our second model.
 
 ### Randon Forest  
 
-Random Forest is a model built from an ensemble of random decisions trees. Decision trees are predictive models which split the data into various subsets based on characteristics and assigning a probable predicted outcome based on which subset the data point falls into; this process is called recursive partitioning. This is normally represented as a nodes with "branches" coming off of them. We can view them as follows:\
+Random Forest is a model built from an ensemble of random decisions trees. Decision trees are predictive models which split the data into various subsets based on characteristics and assigning a probable predicted outcome based on which subset the data point falls into; this process is called recursive partitioning. Visually, this can be represented as nodes with "branches" coming off of them. We can view them as follows:\
 
 $$\hat Y_{i} = \begin{cases} x_{i,1} > m \implies \begin{cases} x_{i,2} > n \implies \begin{cases} x_{i,3} > c \implies 1 \\ x_{i,3} < c \implies \begin{cases} x_{i,4} > s \implies 1 \\ x_{i,4} < s \implies 0 \end{cases} \end{cases} \\ x_{i,2} < n \implies \begin{cases} x_{i,4} > s \implies 1 \\ x_{i,4} < s \implies 0 \end{cases} \end{cases} \\ x_{i,1} < m \implies \begin{cases} x_{i,2} > n \implies \begin{cases} x_{i,4} > s \implies 1 \\ x_{i,4} < s \implies 0 \end{cases} \\ x_{i,n} < n \implies \begin{cases} x_{i,3} > c \implies 1 \\ x_{i,3} < c \implies \begin{cases} x_{i,4} > s \implies 1 \\ x_{i,4} < s \implies 0 \end{cases} \end{cases} \end{cases} \end{cases}$$
 
-Where $\hat Y_i$ is the predicted value and $x_{i,1}$, $x_{i,2}$, $x_{i,3}$, and $x_{i,4}$ are characteristics with values of in the range of $m$, $n$, $c$, and $s$ respectively. Decision trees work by following the tree down the "branches"; each time you get to a node you examine a characteristic that causes you to go down the path one way or the other. You continue following your choices until you get to the end of the chart, also called a "leaf". The leaf will then assign a prediction to the data point.\
+Where $\hat Y_i$ is the predicted value and $x_{i,1}$, $x_{i,2}$, $x_{i,3}$, and $x_{i,4}$ are characteristics with values of in the range of $m$, $n$, $c$, and $s$ respectively. Decision trees work by following the "tree" down the "branches"; each time you get to a node you examine a (set of) characteristic(s) that causes you to go down the path one way or the other. You continue following your choices until you get to the end of the chart, also called a "leaf". The leaf will then assign a prediction to the data point.\
 \
 Random forest generate many random decision trees from the data, allowing the model to be more flexible and avoiding the common problem of over-fitting that can happen if just one tree is created for the model.\
 
 ### Ensemble  
 
-An ensemble model uses predictions from other models to make its prediction. The model looks at all the other predictions and then uses a majority voting approach to determine how it should predict the outcome. If a majority of the models predicts the outcome of the case as liberal, the ensemble will classify it that was well. We are using three underlying models and do not need to consider a tie breaker mechanism. We can view the model this way:\
+Finally, an ensemble model uses predictions from other models to make its prediction. The model looks at all the other predictions and then uses a majority voting approach to determine how it should predict the outcome. If a majority of the models predicts the outcome of the case as liberal, the ensemble will classify it that way as well. We are using our three underlying models and so we will always have a majority and do not need to consider a tie breaker mechanism. We can view the model this way:\
 
 $$\hat Y_{i} = \begin{cases} y_{i,1} + y_{i,2} + y_{i,3} > 1 \implies 1 \\ y_{i,1} + y_{i,2} + y_{i,3} < 2 \implies 0 \end{cases}$$
 Where $\hat Y_i$ is the prediction of the ensemble and $y_{i,1}$, $y_{i,2}$, and $y_{i,3}$ are the predictions from our previous models.\
@@ -563,7 +564,7 @@ Where $\hat Y_i$ is the prediction of the ensemble and $y_{i,1}$, $y_{i,2}$, and
 
 ## Metrics  
 
-Before we can examine how our models performed, we need to define the metric we will use to compare them. A reason that the legal industry has bee slow to adopt artificial intelligence and machine learning is that users expect very accurate predictions and the business will not compromise or allow for a general weakness within models.\
+Before we can examine how our models performed, we need to define the metric we will use to compare them. A reason that the legal industry has been slow to adopt artificial intelligence and machine learning is that users expect very accurate predictions and the business will not compromise or allow for a general weakness within models.\
 \
 Because we are predicting a single outcome as either liberal or conservative, there are 4 possible results from our prediction:\
 
@@ -603,6 +604,8 @@ The Matthews correlation coefficient (MCC) is regarded as one of the most balanc
 $$ MCC = \frac{ \left( \Sigma TP \right) \left( \Sigma TN \right)- \left( \Sigma FP \right) \left( \Sigma FN \right)}{\sqrt{ \left( \Sigma TP+ \Sigma FP \right) \left(\Sigma TP+\Sigma FN \right) \left(\Sigma TN+ \Sigma FP \right) \left( \Sigma TN+\Sigma FN \right)}}$$
 
 This is the most robust option available to us and because of the skew in our sample outcomes, this is the option we will select.\
+\
+Because MCC is a coefficient, the possible values range from -1 to 1 with 1 being perfect predictions and 0 being a random guess (a negative score would mean that we were predicting the incorrect answer). The closer the MCC is to 1, the better our model is performing.\
 \
 we can build a function in r to calculate this from the confusion matrix output from the caret library:\
 ```{r}
@@ -704,7 +707,7 @@ The MCC associated with these results is:\
 Results[3,]
 ```
 
-Great! We've improved over the linear fit and have a new candidate for best fit.\
+Great! We've improved over the linear fit and have a new top candidate for best fit.\
 
 ### Ensemble  
 
@@ -728,8 +731,16 @@ This turns out to be our second best model, coming in slightly better than than 
 
 # Conclusion  
 
-Our goal was to create a classifier that predicted if a case would have liberal or conservative ruling and we were able to build several models that performed moderately when looking a robust metric utilizing a handful of diverse variables in the Carp-Manning data set, although we faced several limitations that we outlined above. Our best performing model was the random forest. \
-\
+Our goal was to create a classifier that predicted if a case would have liberal or conservative ruling and we were able to build several models that performed consistently better than guessing when utilizing a handful of diverse variables in the Carp-Manning data set, despite the limitations that we outlined above.\
+
+## Selected model
+
+Our best performing model was the random forest. \
+
+## Future Work
+
 We did not consider several of the variables or even explore all available variables during our visualization step. Future work could utilize additional variables to increase the accuracy of the predictions. Additionally, improvements could be made to the case type categorization system to increase the detail and complexity of the classification system which would increase the model accuracy. Another area of improvement would be to increase our computational power and focus on building prediction profiles for individual judges which could be even more useful than the general approach we have taken.\
-\
-Even though we were not able to create a model with a high degree of accuracy, lower quality models could still be impactful in the legal space. This information could be leveraged to help law firms build settlement strategies or help determine which cases the firms should focus its resources on. If the model were even more accurate, this could have a larger impact, but the model will not replace the human act of analyzing facts and applying laws to determine how justice should best be served.
+
+## Impact
+
+Even though we were not able to create a model with a high degree of accuracy, our lower quality models could still be impactful in the legal space. This information could be leveraged to help law firms build settlement strategies or help determine which cases the firms should focus its resources on. If the model were even more accurate, this could have a larger impact, but the model will not replace the human act of analyzing facts and applying laws to determine how justice should best be served.

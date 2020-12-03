@@ -226,7 +226,7 @@ rm(tend_party)
 
 # plot for appointing president
 tend_pres <- CMtraining %>% group_by(presname, year, judge) %>% summarise(avgyear = (mean(libcon)-.5), count=n())
-ggplot(tend_pres, aes(x=year, y=avgyear, color=presname)) + geom_point() + labs(x="Year", y="") + scale_y_continuous(labels=c("cons", "m.cons", "ind", "m.lib", "lib")) + theme_classic()
+ggplot(tend_pres, aes(x=year, y=avgyear, color=presname)) + geom_point() + labs(x="Year", y="") + scale_y_continuous(labels=c("cons", "m.cons", "ind", "m.lib", "lib")) + scale_color_discrete(name = "") + theme_classic()
 rm(tend_pres)
 
 # plot for appointing president's political party
@@ -318,6 +318,9 @@ Results <- add_row(Results, method = "Naive Bayes", MCC = nbMCC)
 rf_grid <-   expand.grid(predFixed = c(3,5,7),
                         minNode = c(50,100))
 # model
+
+# CAUTION: This step took several hours on my computer
+
 train_rf <- train(libcon~., data=CMtraining_selected, method="Rborist", na.action=na.omit, trControl=control, tuneGrid=rf_grid)
 # made predictions
 y_hat_rf <- predict(train_rf, CMtest_selected)
